@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppGateway } from '../app.gateway';
 import { MessagesController } from './messages.controller';
+import { MessagesGateway } from './messages.gateway';
 import { MessagesService } from './messages.service';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { Participant, ParticipantSchema } from './schemas/participant.schema';
@@ -21,6 +21,6 @@ import { Room, RoomSchema } from './schemas/room.schema';
     }),
   ],
   controllers: [MessagesController],
-  providers: [MessagesService, AppGateway],
+  providers: [MessagesGateway, MessagesService],
 })
 export class MessagesModule {}

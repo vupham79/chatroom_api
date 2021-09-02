@@ -2,10 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { AppGateway } from '../app.gateway';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { MessageDto } from './dto/message.dto';
 import { PaginationQueryDto } from './dto/paginator.dto';
+import { MessagesGateway } from './messages.gateway';
 import { Message } from './schemas/message.schema';
 import { Participant } from './schemas/participant.schema';
 import { Room } from './schemas/room.schema';
@@ -18,7 +18,7 @@ export class MessagesService {
     @InjectModel(Participant.name)
     private readonly participantModel: Model<Participant>,
     private jwtService: JwtService,
-    private readonly messageGateway: AppGateway,
+    private readonly messageGateway: MessagesGateway,
   ) {}
 
   async joinRoom(joinRoomDto: JoinRoomDto) {
@@ -163,11 +163,11 @@ export class MessagesService {
   }
 
   async checkUsernameJoinedChatroom(username: string, roomId: string) {
-    const isUsernameJoinedChatroom = await this.roomModel.findOne({
-      roomId: roomId,
-      'onlineParticipants.username': username,
+    const participant = await this.participantModel.findOne({
+      roomId,
+      username,
     });
-    return !!isUsernameJoinedChatroom;
+    return !!participant?.token;
   }
 
   async getRoomMessages(roomId: string, paginationQuery: PaginationQueryDto) {
