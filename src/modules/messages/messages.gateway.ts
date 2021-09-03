@@ -34,30 +34,32 @@ export class MessagesGateway
   async handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     const { username, roomId } = this.users[client.id];
-    const room = await this.roomModel
-      .findOne({
-        roomId,
-      })
-      .populate({
-        path: 'onlineParticipants',
-      });
-    const participantIndex = room.onlineParticipants?.findIndex(
-      (participant) => participant.username === username,
-    );
-    if (participantIndex > -1) {
-      room.onlineParticipants.splice(participantIndex, 1);
-      room.markModified('onlineParticipants');
-      await room.save();
+    if (username && roomId) {
+      const room = await this.roomModel
+        .findOne({
+          roomId,
+        })
+        .populate({
+          path: 'onlineParticipants',
+        });
+      const participantIndex = room.onlineParticipants?.findIndex(
+        (participant) => participant.username === username,
+      );
+      if (participantIndex > -1) {
+        room.onlineParticipants.splice(participantIndex, 1);
+        room.markModified('onlineParticipants');
+        await room.save();
+      }
+      await this.participantModel.findOneAndUpdate(
+        {
+          username,
+          roomId,
+        },
+        {
+          token: null,
+        },
+      );
     }
-    await this.participantModel.findOneAndUpdate(
-      {
-        username,
-        roomId,
-      },
-      {
-        token: null,
-      },
-    );
     this.server.emit(`leave_room_${roomId}`, {
       username,
     });
@@ -70,6 +72,9 @@ export class MessagesGateway
 
   @SubscribeMessage('identity')
   async onChat(client, message) {
+    this.logger.log(
+      `Client connected: ${message.username} at room ${message.roomId}`,
+    );
     this.users[client.id] = {
       username: message.username,
       roomId: message.roomId,

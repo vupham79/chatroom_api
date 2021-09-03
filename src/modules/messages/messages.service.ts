@@ -116,28 +116,16 @@ export class MessagesService {
     const session = await this.roomModel.startSession();
     session.startTransaction();
     try {
-      const participant = await this.participantModel.findOne(
-        {
-          username,
-        },
-        null,
-        {
-          session,
-        },
-      );
+      const participant = await this.participantModel.findOne({
+        username,
+      });
       const newMessage = new this.messageModel({
         participant,
         content: message.content,
       });
-      const room = await this.roomModel.findOne(
-        {
-          roomId,
-        },
-        null,
-        {
-          session,
-        },
-      );
+      const room = await this.roomModel.findOne({
+        roomId,
+      });
       room.messages.push(newMessage);
       room.markModified('messages');
       await newMessage.save({
@@ -146,13 +134,14 @@ export class MessagesService {
       await room.save({
         session,
       });
-      await session.commitTransaction();
-      session.endSession();
 
       this.messageGateway.server.emit(`receive_message_${roomId}`, {
         username,
         message: newMessage,
       });
+
+      await session.commitTransaction();
+      session.endSession();
 
       return newMessage;
     } catch (error) {
@@ -171,8 +160,8 @@ export class MessagesService {
   }
 
   async getRoomMessages(roomId: string, paginationQuery: PaginationQueryDto) {
-    const offset = paginationQuery.offset || 0;
-    const limit = paginationQuery.limit || 15;
+    const offset = +paginationQuery?.offset || 0;
+    const limit = +paginationQuery?.limit || 15;
 
     const room = await this.roomModel
       .findOne(
@@ -180,7 +169,7 @@ export class MessagesService {
           roomId,
         },
         {
-          messages: { $slice: [0, 15] },
+          messages: { $slice: [offset, limit] },
         },
       )
       .sort({
